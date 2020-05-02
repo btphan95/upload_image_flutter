@@ -1,9 +1,10 @@
 # Upload and Send an Image on Flutter Web
 
-![alt text](./images/screen_2.png "Title Text")
+![alt text](./images/screen_2.png "Flutter web app")
 
-A Flutter web app that will let you upload an image and send it to an API endpoint.
-Based off of 
+A Flutter web app that will let you upload an image and send it to an API endpoint that looks for a Multipart "image" file. For example, I used a Flask backend with command `requests.file.get("image")` to retrieve files from this app.
+
+Thanks to this [amazing repository](https://github.com/rjcalifornia/web_upload) by [rjcalifornia](https://github.com/rjcalifornia) for the inspiration.
 
 ### Requirements
 
@@ -20,6 +21,6 @@ Based off of
 
 ### Installation
 
-* Clone this repository: https://github.com/btphan95/upload_image_flutter.git
-* Open the project Visual Studio Code 
-* Run flutter pub get
+* Clone this repository: `git clone https://github.com/btphan95/upload_image_flutter'
+* Cd into repository folder: `cd upload_image_flutter` 
+* Run flutter (for web, make sure you have [web enabled](https://flutter.dev/docs/get-started/web) and run: `flutter run`)
