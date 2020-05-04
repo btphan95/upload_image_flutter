@@ -14,13 +14,14 @@ class FileUploadButton extends StatefulWidget {
 }
 
 class _FileUploadButtonState extends State<FileUploadButton> {
-  List<int> _selectedFile;
-  String display = "hello world";
   Uint8List image;
   var results;
   GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
 
   startWebFilePicker() async {
+    results = null; 
+    image = null;
+        
     html.InputElement uploadInput = html.FileUploadInputElement();
     uploadInput.multiple = true;
     uploadInput.draggable = true;
@@ -30,39 +31,57 @@ class _FileUploadButtonState extends State<FileUploadButton> {
       final files = uploadInput.files;
       final file = files[0];
       final reader = new html.FileReader();
-
       reader.onLoadEnd.listen((e) {
                     setState(() {
                       image = reader.result;
+                      print('image is' + image.runtimeType.toString());
                     });
         });
 
         reader.onError.listen((fileEvent) {
           setState(() {
-            display = "Some Error occured while reading the file";
+            print('error reading file');
           });
         });
 
         reader.readAsArrayBuffer(file);  
         });
+    _makeRequest();  
     }    
     
   Future<List<dynamic>> makeRequest() async {
     var url = Uri.parse(
-        "http://localhost:3333/predict");
+        "http://localhost:4444/predict");
     var request = new http.MultipartRequest("POST", url);
-    request.files.add(await http.MultipartFile.fromBytes('image', image,
-        contentType: new MediaType('image', 'jpeg'),
-        filename: "image"));
+
+//     request.files.add(await http.MultipartFile.fromBytes('image', image,
+//         contentType: new MediaType('image', 'jpeg'),
+//         filename: "image"));
+      print('waiting');
+      var multipart;
+      var done = 0;
+      while (done == 0) {
+          try {
+              multipart = await http.MultipartFile.fromBytes('image', image,
+                contentType: new MediaType('image', 'jpeg'),
+                filename: "image");
+              done = 1;
+          }
+          catch (uh_oh) {
+              print("uh oh");
+              await new Future.delayed(new Duration(milliseconds: 100)); // Add this line
+          }
+      }
+      
+      print('done. now testing if it works:');
+      setState(() {
+          request.files.add(multipart);
+          });      
     var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
-      print(response.statusCode);
       if (response.statusCode == 200) print("Uploaded!");
       results = json.decode(response.body);
-      print(results["predictions"]);
-    print('Now what?');
-      print(results["predictions"][0]["label"].runtimeType);
-      print(results["predictions"].runtimeType);
+
       return results["predictions"];
 //     showDialog(
 //         barrierDismissible: false,
@@ -93,14 +112,13 @@ class _FileUploadButtonState extends State<FileUploadButton> {
   }
   
   void _makeRequest() async {
-      print("yes?");
       results = await makeRequest();
       print("YES!!!!");
       print(results);
 //       display = results;
-      print(display);
+//       print(display);
       setState(() => results = results);
-      print('display updated!');
+//       print('display updated!');
 //       return results;
   }
 
@@ -116,49 +134,43 @@ class _FileUploadButtonState extends State<FileUploadButton> {
               padding: const EdgeInsets.only(top: 16.0, left: 28),
               child: new Container(
                   width: 350,
-                  child: Column(children: <Widget>[
-                    Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
-                          MaterialButton(
-                            color: Colors.pink,
-                            hoverColor: Colors.pink[400],
-                            elevation: 8,
-                            highlightElevation: 2,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                            textColor: Colors.white,
-                            child: Text('Select a file'),
-                            onPressed: () {
-                              startWebFilePicker();
-                            },
-                          ),
-                          Divider(
-                            color: Colors.teal,
-                          ),
-                          RaisedButton(
-                            color: Colors.purple,
-                            hoverColor: Colors.purple[400],
-                            elevation: 8.0,
-                            textColor: Colors.white,
-                            onPressed: () {
-                              _makeRequest();
-                            },
-                            child: Text('Send file to server'),
-                          ),
+                          FloatingActionButton.extended(
+                              onPressed: () {
+                                startWebFilePicker();
+//                                 _makeRequest();  
+                              },
+                              label: Text('Upload an image'),
+                              icon: Icon(Icons.wallpaper),
+                              backgroundColor: Colors.pink,
+                          ),  
                          results == null
                           ? Container(
-                              child: Text('Hello world'),
+                              child: Text(''),
                             )
                           : Container(
-                              child: Column(
+                              child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
-                                      for ( var i in results ) Text(i["label"].toString())
+                                      Column(
+//                                           crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                              for ( var i in results ) Text(i["label"].toString())
+                                          ],
+                                      ),
+                                      Column(
+//                                           crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                              for ( var i in results ) Text(i["probability"].toStringAsFixed(2))
+                                          ],
+                                      ),
                                   ],
-                              ),
+                              ),   
                             )
                         ]),
-                  ])),
+                  ),
             ),
           ),
         );
